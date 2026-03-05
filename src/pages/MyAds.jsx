@@ -1,6 +1,16 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "../api/axiosInstance";
+import { 
+  LayoutDashboard, 
+  PlusCircle, 
+  Files, 
+  LogOut, 
+  Zap, 
+  Search,
+  Copy,
+  Trash2
+} from "lucide-react";
 
 const MyAds = () => {
   const navigate = useNavigate();
@@ -24,169 +34,136 @@ const MyAds = () => {
   };
 
   const handleDelete = async (id) => {
-    try {
-      await axiosInstance.delete(`/ads/${id}`);
-      setAds((prev) => prev.filter((ad) => ad.id !== id));
-    } catch (error) {
-      console.error("Delete failed", error);
+    if (window.confirm("Are you sure you want to delete this ad?")) {
+      try {
+        await axiosInstance.delete(`/ads/${id}`);
+        setAds((prev) => prev.filter((ad) => ad.id !== id));
+      } catch (error) {
+        console.error("Delete failed", error);
+      }
     }
   };
 
-  const handleCopy = (text) => {
+  const handleCopy = (ad) => {
+    const text = `${ad.headline}\n\n${ad.description}\n\n${ad.cta}`;
     navigator.clipboard.writeText(text);
     alert("Ad copied to clipboard!");
   };
 
-  //const filteredAds = ads.filter((ad) =>
-  //  ad.content.toLowerCase().includes(search.toLowerCase())
-  //);
-
-    const filteredAds = ads.filter((ad) => {
-    const text = `
-    ${ad.headline || ""}
-    ${ad.description || ""}
-    ${ad.cta || ""}
-    `.toLowerCase();
-
+  const filteredAds = ads.filter((ad) => {
+    const text = `${ad.headline || ""} ${ad.description || ""} ${ad.cta || ""}`.toLowerCase();
     return text.includes(search.toLowerCase());
   });
 
-
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-xl font-semibold">
-        Loading your ads...
-      </div>
-    );
-  }
+  if (loading) return <div className="h-screen flex items-center justify-center text-indigo-600 font-bold">Loading your library...</div>;
 
   return (
-    <div className="min-h-screen flex bg-gray-100">
-
-      {/* Sidebar */}
-      <div className="w-64 bg-gradient-to-b from-indigo-700 to-purple-700 text-white p-6 shadow-xl">
-        <h2 className="text-2xl font-bold mb-12">AdGenAI</h2>
-
-        <div className="space-y-4">
-          <button
-            onClick={() => navigate("/dashboard")}
-            className="block w-full text-left hover:bg-white/20 px-4 py-2 rounded-lg transition"
-          >
-            📊 Dashboard
-          </button>
-
-          <button
-            onClick={() => navigate("/create-ad")}
-            className="block w-full text-left hover:bg-white/20 px-4 py-2 rounded-lg transition"
-          >
-            ➕ Create Ad
-          </button>
-
-          <button
-            onClick={() => navigate("/my-ads")}
-            className="block w-full text-left bg-white/20 px-4 py-2 rounded-lg"
-          >
-            📄 My Ads
-          </button>
-
-          <button
-            onClick={() => {
-              localStorage.removeItem("token");
-              navigate("/login");
-            }}
-            className="block w-full text-left hover:bg-white/20 px-4 py-2 rounded-lg transition"
-          >
-            🚪 Logout
-          </button>
+    <div className="min-h-screen bg-[#F8FAFC] flex">
+      {/* --- SIDEBAR (Matches Dashboard) --- */}
+      <aside className="w-68 bg-indigo-900 text-white hidden lg:flex flex-col p-6 shadow-2xl">
+        <div className="flex items-center gap-3 mb-12 px-2">
+          <div className="bg-indigo-500 p-2 rounded-lg shadow-lg">
+            <Zap size={22} fill="white" />
+          </div>
+          <span className="text-xl font-black tracking-tight italic">ADGEN.AI</span>
         </div>
-      </div>
+        
+        <nav className="flex-1 space-y-2">
+          <SidebarItem icon={<LayoutDashboard size={20}/>} label="Dashboard" onClick={() => navigate("/dashboard")} />
+          <SidebarItem icon={<PlusCircle size={20}/>} label="Create New Ad" onClick={() => navigate("/create-ad")} />
+          <SidebarItem icon={<Files size={20}/>} label="My Library" active onClick={() => navigate("/my-ads")} />
+        </nav>
 
-      {/* Main Content */}
-      <div className="flex-1 p-10">
-
-        {/* Header */}
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-800">
-            My Generated Ads
-          </h1>
-
-          <input
-            type="text"
-            placeholder="Search ads..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
+        <div className="pt-6 border-t border-indigo-800">
+           <SidebarItem icon={<LogOut size={20}/>} label="Sign Out" onClick={() => {
+             localStorage.removeItem("token");
+             navigate("/login");
+           }} />
         </div>
+      </aside>
 
-        {/* Empty State */}
+      {/* --- MAIN CONTENT --- */}
+      <main className="flex-1 p-6 lg:p-10 overflow-y-auto">
+        <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
+          <div>
+            <h1 className="text-3xl font-black text-slate-900">My Library</h1>
+            <p className="text-slate-500 font-medium">Manage and export your generated ad content.</p>
+          </div>
+
+          <div className="relative w-full md:w-72">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <input
+              type="text"
+              placeholder="Search your ads..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-3 rounded-2xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none transition-all shadow-sm"
+            />
+          </div>
+        </header>
+
         {filteredAds.length === 0 ? (
-          <div className="bg-white p-10 rounded-2xl shadow text-center">
-            <h2 className="text-xl font-semibold mb-4">
-              No Ads Found 🚀
-            </h2>
-            <p className="text-gray-500 mb-6">
-              Start generating ads to see them here.
-            </p>
+          <div className="bg-white p-12 rounded-[2rem] border border-slate-100 shadow-sm text-center">
+            <div className="bg-indigo-50 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6">
+              <Files className="text-indigo-600" size={32} />
+            </div>
+            <h2 className="text-xl font-bold text-slate-800 mb-2">No Ads Found</h2>
+            <p className="text-slate-500 mb-8">Ready to create something amazing?</p>
             <button
               onClick={() => navigate("/create-ad")}
-              className="bg-indigo-600 text-white px-6 py-3 rounded-xl hover:bg-indigo-700 transition"
+              className="bg-indigo-600 text-white font-bold py-3 px-8 rounded-2xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100"
             >
-              Generate Your First Ad
+              Generate First Ad
             </button>
           </div>
         ) : (
-          <div className="grid md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
             {filteredAds.map((ad) => (
-              <div
-                key={ad.id}
-                className="bg-white p-6 rounded-2xl shadow hover:shadow-xl transition duration-300 hover:-translate-y-1"
-              >
-                <p className="text-gray-700 whitespace-pre-wrap mb-6 line-clamp-6">
-                  {ad.content}
-                </p>
+              <div key={ad.id} className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+                <div>
+                  <div className="flex justify-between items-start mb-4">
+                    <span className="bg-slate-100 text-slate-600 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest">
+                      {ad.platform || "General"}
+                    </span>
+                  </div>
+                  <h3 className="text-xl font-black text-slate-800 mb-3">{ad.headline}</h3>
+                  <p className="text-slate-600 leading-relaxed mb-4">{ad.description}</p>
+                  <p className="text-indigo-600 font-bold mb-8 italic">{ad.cta}</p>
+                </div>
 
-
-                  <h3 className="text-xl font-bold mb-2 text-gray-800">
-                    {ad.headline}
-                  </h3>
-
-                  <p className="text-gray-600 mb-3">
-                   {ad.description}
-                  </p>
-
-                  <p className="text-indigo-600 font-semibold mb-6">
-                  {ad.cta}
-                  </p>
-
-
-                <div className="flex justify-between">
+                <div className="flex gap-3 border-t border-slate-50 pt-6">
                   <button
-                    onClick={() =>
-                       handleCopy(
-                      `${ad.headline}\n\n${ad.description}\n\nCTA: ${ad.cta}`
-                      )
-                    }
-                    className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition"
+                    onClick={() => handleCopy(ad)}
+                    className="flex-1 flex items-center justify-center gap-2 bg-indigo-50 text-indigo-700 font-bold py-3 rounded-xl hover:bg-indigo-100 transition-colors"
                   >
-                    Copy
+                    <Copy size={18} /> Copy
                   </button>
-
                   <button
                     onClick={() => handleDelete(ad.id)}
-                    className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition"
+                    className="flex items-center justify-center p-3 text-rose-500 hover:bg-rose-50 rounded-xl transition-colors"
                   >
-                    Delete
+                    <Trash2 size={20} />
                   </button>
                 </div>
               </div>
             ))}
           </div>
         )}
-      </div>
+      </main>
     </div>
   );
 };
+
+// Reusable Sidebar Component (Matches Dashboard)
+const SidebarItem = ({ icon, label, active, onClick }) => (
+  <button 
+    onClick={onClick}
+    className={`flex items-center gap-3 w-full p-4 rounded-2xl transition-all duration-200 ${
+      active ? "bg-white/15 text-white shadow-inner" : "text-indigo-200 hover:bg-white/5 hover:text-white"
+    }`}
+  >
+    {icon} <span className="font-semibold text-sm">{label}</span>
+  </button>
+);
 
 export default MyAds;
